@@ -1,17 +1,3 @@
-# Copyright 2019 Zach Sais
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 """Sample app that uses the Data Loss Prevention API to inspect a string, a
 local file or a file on Google Cloud Storage."""
 
@@ -26,8 +12,6 @@ PROJECT_ID = ''
 
 # [START dlp_inspect_string]
 def inspect_string(project, content_string, info_types,
-                     cscc=False, output_project=None, output_dataset_id=None, output_table_id=None,
-                     topic_id=None, subscription_id=None,
                      custom_dictionaries=None,
                      custom_regexes=None, min_likelihood=None,
                      max_findings=None, timeout=300, include_quote=True):
@@ -55,6 +39,8 @@ def inspect_string(project, content_string, info_types,
 
     # Prepare info_types by converting the list of strings into a list of
     # dictionaries (protos are also accepted).
+    if not info_types:
+        info_types = ['ALL_BASIC']
     info_types = [{'name': info_type} for info_type in info_types]
 
     # Prepare custom_info_types by parsing the dictionary word lists and
@@ -111,8 +97,7 @@ def inspect_string(project, content_string, info_types,
 # [START dlp_inspect_table]
 
 
-def inspect_table(project, data, info_types, cscc=False, output_project=None, output_dataset_id=None, output_table_id=None,
-                     topic_id=None, subscription_id=None,
+def inspect_table(project, data, info_types,
                      custom_dictionaries=None,
                      custom_regexes=None, min_likelihood=None,
                      max_findings=None, timeout=300, include_quote=True):
@@ -168,7 +153,10 @@ def inspect_table(project, data, info_types, cscc=False, output_project=None, ou
 
     # Prepare info_types by converting the list of strings into a list of
     # dictionaries (protos are also accepted).
+    if not info_types:
+        info_types = ['ALL_BASIC']
     info_types = [{'name': info_type} for info_type in info_types]
+
 
     # Prepare custom_info_types by parsing the dictionary word lists and
     # regex patterns.
@@ -234,7 +222,8 @@ def inspect_table(project, data, info_types, cscc=False, output_project=None, ou
 # [START dlp_inspect_file]
 
 
-def inspect_file(project, filename, info_types, min_likelihood=None,
+def inspect_file(project, filename, info_types,
+                 min_likelihood=None,
                  custom_dictionaries=None, custom_regexes=None,
                  max_findings=None, include_quote=True, mime_type=None):
     """Uses the Data Loss Prevention API to analyze a file for protected data.
@@ -243,16 +232,6 @@ def inspect_file(project, filename, info_types, min_likelihood=None,
         filename: The path to the file to inspect.
         info_types: A list of strings representing info types to look for.
             A full list of info type categories can be fetched from the API.
-        cscc: Should the job publish findings to Cloud Security Command Center. Default is False. 
-        output_project: The Google Cloud project id of the output table.
-        output_dataset_id: The id of the output BigQuery dataset.
-        output_table_id: The id of the output BigQuery table.
-        topic_id: The id of the Cloud Pub/Sub topic to which the API will
-            broadcast job completion. The topic must already exist.
-        subscription_id: The id of the Cloud Pub/Sub subscription to listen on
-            while waiting for job completion. The subscription must already
-            exist and be subscribed to the topic.
-        namespace_id: The namespace of the Datastore document, if applicable.
         min_likelihood: A string representing the minimum likelihood threshold
             that constitutes a match. One of: 'LIKELIHOOD_UNSPECIFIED',
             'VERY_UNLIKELY', 'UNLIKELY', 'POSSIBLE', 'LIKELY', 'VERY_LIKELY'.
@@ -277,8 +256,9 @@ def inspect_file(project, filename, info_types, min_likelihood=None,
     # Prepare info_types by converting the list of strings into a list of
     # dictionaries (protos are also accepted).
     if not info_types:
-        info_types = ['FIRST_NAME', 'LAST_NAME', 'EMAIL_ADDRESS']
+        info_types = ['ALL_BASIC']
     info_types = [{'name': info_type} for info_type in info_types]
+
 
     # Prepare custom_info_types by parsing the dictionary word lists and
     # regex patterns.
@@ -396,7 +376,7 @@ def inspect_gcs_file(project, bucket, filename,
     # Prepare info_types by converting the list of strings into a list of
     # dictionaries (protos are also accepted).
     if not info_types:
-        info_types = ['FIRST_NAME', 'LAST_NAME', 'EMAIL_ADDRESS']
+        info_types = ['ALL_BASIC']
     info_types = [{'name': info_type} for info_type in info_types]
 
     # Prepare custom_info_types by parsing the dictionary word lists and
@@ -444,6 +424,19 @@ def inspect_gcs_file(project, bucket, filename,
         actions += {
         'publish_summary_to_cscc': {}
     }
+
+    if output_project and output_dataset_id and output_table_id:
+        actions += {
+            'save_findings': {
+                'output_config': {
+                    'table': {
+                        'project_id': output_project,
+                        'dataset_id': output_dataset_id,
+                        'table_id': output_table_id
+                    }
+                }
+            }
+        }
 
     # Construct the inspect_job, which defines the entire inspect content task.
     inspect_job = {
@@ -514,7 +507,7 @@ def inspect_datastore(project, datastore_project, kind,
     # Prepare info_types by converting the list of strings into a list of
     # dictionaries (protos are also accepted).
     if not info_types:
-        info_types = ['FIRST_NAME', 'LAST_NAME', 'EMAIL_ADDRESS']
+        info_types = ['ALL_BASIC']
     info_types = [{'name': info_type} for info_type in info_types]
 
     # Prepare custom_info_types by parsing the dictionary word lists and
@@ -560,10 +553,26 @@ def inspect_datastore(project, datastore_project, kind,
     # Convert the project id into a full resource id.
     parent = dlp.project_path(project)
 
-    # Tell the API to send findings to CSCC.
-    actions = [{
-        'publish_summary_to_cscc'
-    }]
+    # Tell the API where to send findings to.
+    actions = []
+
+    if cscc:
+        actions += {
+        'publish_summary_to_cscc': {}
+    }
+
+    if output_project and output_dataset_id and output_table_id:
+        actions += {
+            'save_findings': {
+                'output_config': {
+                    'table': {
+                        'project_id': output_project,
+                        'dataset_id': output_dataset_id,
+                        'table_id': output_table_id
+                    }
+                }
+            }
+        }
 
     # Construct the inspect_job, which defines the entire inspect content task.
     inspect_job = {
@@ -635,8 +644,9 @@ def inspect_bigquery(project, bigquery_project, dataset_id, table_id,
     # Prepare info_types by converting the list of strings into a list of
     # dictionaries (protos are also accepted).
     if not info_types:
-        info_types = ['FIRST_NAME', 'LAST_NAME', 'EMAIL_ADDRESS']
+        info_types = ['ALL_BASIC']
     info_types = [{'name': info_type} for info_type in info_types]
+
 
     # Prepare custom_info_types by parsing the dictionary word lists and
     # regex patterns.
@@ -679,10 +689,26 @@ def inspect_bigquery(project, bigquery_project, dataset_id, table_id,
     # Convert the project id into a full resource id.
     parent = dlp.project_path(project)
 
-    # Tell the API to send findings to CSCC.
-    actions = [{
-        'publish_summary_to_cscc'
-    }]
+    # Tell the API where to send findings to.
+    actions = []
+
+    if cscc:
+        actions += {
+        'publish_summary_to_cscc': {}
+    }
+
+    if output_project and output_dataset_id and output_table_id:
+        actions += {
+            'save_findings': {
+                'output_config': {
+                    'table': {
+                        'project_id': output_project,
+                        'dataset_id': output_dataset_id,
+                        'table_id': output_table_id
+                    }
+                }
+            }
+        }
 
     # Construct the inspect_job, which defines the entire inspect content task.
     inspect_job = {

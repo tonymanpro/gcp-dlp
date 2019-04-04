@@ -40,8 +40,9 @@ def inspect_string(project, content_string, info_types,
     # Prepare info_types by converting the list of strings into a list of
     # dictionaries (protos are also accepted).
     if not info_types:
-        info_types = ['ALL_BASIC']
-    info_types = [{'name': info_type} for info_type in info_types]
+        info_types = [{'name': 'ALL_BASIC'}]
+    else:
+        info_types = [{'name': info_type} for info_type in info_types]
 
     # Prepare custom_info_types by parsing the dictionary word lists and
     # regex patterns.
@@ -154,9 +155,9 @@ def inspect_table(project, data, info_types,
     # Prepare info_types by converting the list of strings into a list of
     # dictionaries (protos are also accepted).
     if not info_types:
-        info_types = ['ALL_BASIC']
-    info_types = [{'name': info_type} for info_type in info_types]
-
+        info_types = [{'name': 'ALL_BASIC'}]
+    else:
+        info_types = [{'name': info_type} for info_type in info_types]
 
     # Prepare custom_info_types by parsing the dictionary word lists and
     # regex patterns.
@@ -256,8 +257,9 @@ def inspect_file(project, filename, info_types,
     # Prepare info_types by converting the list of strings into a list of
     # dictionaries (protos are also accepted).
     if not info_types:
-        info_types = ['ALL_BASIC']
-    info_types = [{'name': info_type} for info_type in info_types]
+        info_types = [{'name': 'ALL_BASIC'}]
+    else:
+        info_types = [{'name': info_type} for info_type in info_types]
 
 
     # Prepare custom_info_types by parsing the dictionary word lists and
@@ -376,8 +378,9 @@ def inspect_gcs_file(project, bucket, filename,
     # Prepare info_types by converting the list of strings into a list of
     # dictionaries (protos are also accepted).
     if not info_types:
-        info_types = ['ALL_BASIC']
-    info_types = [{'name': info_type} for info_type in info_types]
+        info_types = [{'name': 'ALL_BASIC'}]
+    else:
+        info_types = [{'name': info_type} for info_type in info_types]
 
     # Prepare custom_info_types by parsing the dictionary word lists and
     # regex patterns.
@@ -421,12 +424,12 @@ def inspect_gcs_file(project, bucket, filename,
     actions = []
 
     if cscc:
-        actions += {
+        actions.append({
         'publish_summary_to_cscc': {}
-    }
+    })
 
     if output_project and output_dataset_id and output_table_id:
-        actions += {
+        actions.append({
             'save_findings': {
                 'output_config': {
                     'table': {
@@ -436,13 +439,13 @@ def inspect_gcs_file(project, bucket, filename,
                     }
                 }
             }
-        }
+        })
 
     # Construct the inspect_job, which defines the entire inspect content task.
     inspect_job = {
         'inspect_config': inspect_config,
         'storage_config': storage_config,
-        'actions': actions,
+        'actions': actions
     }
 
     dlp.create_dlp_job(parent, inspect_job=inspect_job)
@@ -507,8 +510,9 @@ def inspect_datastore(project, datastore_project, kind,
     # Prepare info_types by converting the list of strings into a list of
     # dictionaries (protos are also accepted).
     if not info_types:
-        info_types = ['ALL_BASIC']
-    info_types = [{'name': info_type} for info_type in info_types]
+        info_types = [{'name': 'ALL_BASIC'}]
+    else:
+        info_types = [{'name': info_type} for info_type in info_types]
 
     # Prepare custom_info_types by parsing the dictionary word lists and
     # regex patterns.
@@ -557,12 +561,12 @@ def inspect_datastore(project, datastore_project, kind,
     actions = []
 
     if cscc:
-        actions += {
+        actions.append({
         'publish_summary_to_cscc': {}
-    }
+    })
 
     if output_project and output_dataset_id and output_table_id:
-        actions += {
+        actions.append({
             'save_findings': {
                 'output_config': {
                     'table': {
@@ -572,7 +576,7 @@ def inspect_datastore(project, datastore_project, kind,
                     }
                 }
             }
-        }
+        })
 
     # Construct the inspect_job, which defines the entire inspect content task.
     inspect_job = {
@@ -644,8 +648,9 @@ def inspect_bigquery(project, bigquery_project, dataset_id, table_id,
     # Prepare info_types by converting the list of strings into a list of
     # dictionaries (protos are also accepted).
     if not info_types:
-        info_types = ['ALL_BASIC']
-    info_types = [{'name': info_type} for info_type in info_types]
+        info_types = [{'name': 'ALL_BASIC'}]
+    else:
+        info_types = [{'name': info_type} for info_type in info_types]
 
 
     # Prepare custom_info_types by parsing the dictionary word lists and
@@ -693,12 +698,12 @@ def inspect_bigquery(project, bigquery_project, dataset_id, table_id,
     actions = []
 
     if cscc:
-        actions += {
+        actions.append({
         'publish_summary_to_cscc': {}
-    }
+    })
 
     if output_project and output_dataset_id and output_table_id:
-        actions += {
+        actions.append({
             'save_findings': {
                 'output_config': {
                     'table': {
@@ -708,13 +713,13 @@ def inspect_bigquery(project, bigquery_project, dataset_id, table_id,
                     }
                 }
             }
-        }
+        })
 
     # Construct the inspect_job, which defines the entire inspect content task.
     inspect_job = {
         'inspect_config': inspect_config,
         'storage_config': storage_config,
-        'actions': actions,
+        'actions': actions
     }
 
     dlp.create_dlp_job(parent, inspect_job=inspect_job)
